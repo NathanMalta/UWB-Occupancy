@@ -1,22 +1,7 @@
 #include <Adafruit_GPS.h>
 #include <Adafruit_PMTK.h>
 #include <NMEA_data.h>
-
-/*
-  Arduino LSM6DSOX - Simple Accelerometer
-
-  This example reads the acceleration values from the LSM6DSOX
-  sensor and continuously prints them to the Serial Monitor
-  or Serial Plotter.
-
-  The circuit:
-  - Arduino Nano RP2040 Connect
-
-  created 10 May 2021
-  by Arturo Guadalupi
-
-  This example code is in the public domain.
-*/
+#include <Adafruit_NeoPixel.h>
 #include <Adafruit_LIS2MDL.h>
 #include <Adafruit_Sensor.h>
 #include <Wire.h>
@@ -41,20 +26,34 @@ Adafruit_GPS GPS(&Serial1);
 unsigned long gpsTimer = millis();
 int GPS_update = 2000; //log / print updates every 2 sec.
 
+//create NeoPixel objects
+Adafruit_NeoPixel pixels(1, 8, NEO_GRB + NEO_KHZ800);
 
+//logging info
 char logFilename[] = "output.txt";
-
 unsigned long loopNum = 0;
 int loopsPerLog = 10;
 bool logSerial = false;
 
 void setup() {
   Serial.begin(9600);
+
+  //Startup neopixel
+  pixels.begin();
+  pixels.clear();
+  pixels.setPixelColor(0, pixels.Color(255, 255, 0)); //yellow for init
+  pixels.setBrightness(10);
+  pixels.show();
+
   while (!Serial); //wait for serial before printing
 
   //can we connect to gyro + accel?
   if (!imu.begin()) {
     Serial.println("Could not connect to LSM6DSOX (Gyro + Accel)!");
+    pixels.clear();
+    pixels.setPixelColor(0, pixels.Color(255, 0, 0));
+    pixels.setBrightness(10);
+    pixels.show();
     while (1) delay(10);
   } else {
     Serial.println("Found LSM6DSOX (Gyro + Accel).");
@@ -64,6 +63,10 @@ void setup() {
   lis2mdl.enableAutoRange(true);
   if (!lis2mdl.begin()) {  // I2C mode
     Serial.println("Could not connect to LIS2MDL (Magnetometer)!");
+    pixels.clear();
+    pixels.setPixelColor(0, pixels.Color(255, 0, 0));
+    pixels.setBrightness(10);
+    pixels.show();
     while (1) delay(10);
   } else {
     Serial.println("Found LIS2MDL (Magnetometer).");
@@ -72,6 +75,10 @@ void setup() {
   //can we connect to SD Card?
   if (!sd.begin(SDChipSelect, SD_SCK_MHZ(4))) {
     Serial.println("SDCard Initialization failed!");
+    pixels.clear();
+    pixels.setPixelColor(0, pixels.Color(255, 0, 0));
+    pixels.setBrightness(10);
+    pixels.show();
     while (1) delay(10);
   }
   else{
@@ -80,6 +87,10 @@ void setup() {
 
   //create the logfile (if it doesn't exist)
   if (!logFile.open(logFilename, O_CREAT | O_WRITE)) {
+    pixels.clear();
+    pixels.setPixelColor(0, pixels.Color(255, 0, 0));
+    pixels.setBrightness(10);
+    pixels.show();
     Serial.println("SDCard log file creation failed!");
     while (1) delay(10);
   }
@@ -126,7 +137,6 @@ void loop() {
     if (!GPS.parse(GPS.lastNMEA())) // this also sets the newNMEAreceived() flag to false
       return; // we can fail to parse a sentence in which case we should just wait for another
   }
-
   //print if needed
   if (millis() - gpsTimer >= GPS_update) {
     gpsTimer = millis();
@@ -149,8 +159,16 @@ void loop() {
       Serial.print("Satellites: "); Serial.println((int)GPS.satellites);
       Serial.print("Antenna status: "); Serial.println((int)GPS.antenna);
       Serial.println();
+      pixels.clear();
+      pixels.setPixelColor(0, pixels.Color(0, 255, 0));
+      pixels.setBrightness(10);
+      pixels.show();
     } else{
       Serial.println("No GPS fix. :(");
+      pixels.clear();
+      pixels.setPixelColor(0, pixels.Color(0, 0, 255));
+      pixels.setBrightness(10);
+      pixels.show();
     }
   }
 
@@ -223,3 +241,5 @@ void printIMUInfo(float xAccel, float yAccel, float zAccel, float xGyro, float y
     logFile.close();
   }
 }
+
+
