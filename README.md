@@ -20,5 +20,5 @@ Tools > Manage Libraries > Search and install the following libraries:
 ```
 Arduino_LSM6DSOX - Control of the LSM6DSOX Gyroscope + Accelerometer
 Adafruit LIS2MDL - Control of the LIS2MDL Magnetometer
-Adafruit GPS Library - Control of the PA1616D GPS Module (This isn't up and running yet)
+Adafruit GPS Library - Control of the PA1616D GPS Module
 ```
