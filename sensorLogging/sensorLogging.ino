@@ -140,25 +140,9 @@ void loop() {
   //print if needed
   if (millis() - gpsTimer >= GPS_update) {
     gpsTimer = millis();
-
-    Serial.println("------- GPS INFO: -------");
-    Serial.print("Date: ");
-    Serial.print(GPS.day, DEC); Serial.print('/');
-    Serial.print(GPS.month, DEC); Serial.print("/20");
-    Serial.println(GPS.year, DEC);
-
     //check GPS status
     if (GPS.fix) {
-      Serial.print("Location: ");
-      Serial.print(GPS.latitude, 4); Serial.print(GPS.lat);
-      Serial.print(", ");
-      Serial.print(GPS.longitude, 4); Serial.println(GPS.lon);
-      Serial.print("Speed (knots): "); Serial.println(GPS.speed);
-      Serial.print("Angle: "); Serial.println(GPS.angle);
-      Serial.print("Altitude: "); Serial.println(GPS.altitude);
-      Serial.print("Satellites: "); Serial.println((int)GPS.satellites);
-      Serial.print("Antenna status: "); Serial.println((int)GPS.antenna);
-      Serial.println();
+      printGPSInfo(GPS.latitudeDegrees, GPS.longitudeDegrees, GPS.speed, GPS.altitude, GPS.satellites);
       pixels.clear();
       pixels.setPixelColor(0, pixels.Color(0, 255, 0));
       pixels.setBrightness(10);
@@ -172,6 +156,40 @@ void loop() {
     }
   }
 
+}
+
+void printGPSInfo(float lat, float lon, float speed, float altitude, int numSats) {
+
+  //output to serial
+  Serial.println("------- GPS INFO: -------");
+  Serial.print("Location: ");
+  Serial.print(lat, 4);
+  Serial.print(", ");
+  Serial.print(lon, 4);
+  Serial.println();
+  Serial.print("Speed (knots): "); Serial.println(speed);
+  Serial.print("Altitude: "); Serial.println(altitude);
+  Serial.print("Satellites: "); Serial.println((int)numSats);
+  Serial.println();
+
+  //output to SD
+  if(!logFile.open(logFilename, O_APPEND | O_WRITE)) {
+    Serial.println("Could not create log file.  Check SD Card.");
+  }
+  logFile.print("GPS: ");
+  logFile.print(millis());
+  logFile.print(",");
+  logFile.print(lat, 5);
+  logFile.print(",");
+  logFile.print(lon, 5);
+  logFile.print(",");
+  logFile.print(speed, 5);
+  logFile.print(",");
+  logFile.print(altitude, 5);
+  logFile.print(",");
+  logFile.print((int)numSats);
+  logFile.println();
+  logFile.close();
 }
 
 void printIMUInfo(float xAccel, float yAccel, float zAccel, float xGyro, float yGyro, float zGyro, float xMag, float yMag, float zMag, float temp, bool logSD) {
