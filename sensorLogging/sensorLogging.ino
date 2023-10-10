@@ -8,6 +8,8 @@
 #include <Arduino_LSM6DSOX.h>
 #include <SPI.h>
 #include <SdFat.h>
+#include <DW1000.h>
+#include "DW1000Ranging.h"
 
 //create gyro + accel
 TwoWire dev_i2c(&sercom3, SDA, SCL);  
@@ -34,6 +36,13 @@ char logFilename[] = "output.txt";
 unsigned long loopNum = 0;
 int loopsPerLog = 10;
 bool logSerial = false;
+
+//DW1000 (UWB Chip) constants
+const bool IS_ANCHOR = false;
+const uint8_t PIN_RST = 9; // reset pin
+const uint8_t PIN_IRQ = 17; // irq pin
+const uint8_t PIN_SS = 19; // spi select pin
+
 
 void setup() {
   Serial.begin(9600);
@@ -99,9 +108,30 @@ void setup() {
   GPS.begin(9600);
   GPS.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);
   GPS.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ); // 1 Hz update rate
+
+  //startup UWB module (DW1000)
+  DW1000Ranging.initCommunication(PIN_RST, PIN_SS, PIN_IRQ); //Reset, CS, IRQ pin
+  //define the sketch as anchor. It will be great to dynamically change the type of module
+  DW1000Ranging.attachNewRange(newRange);
+  DW1000Ranging.attachInactiveDevice(inactiveDevice);
+
+  if (IS_ANCHOR) {
+    DW1000Ranging.attachBlinkDevice(newBlink);
+    DW1000Ranging.startAsAnchor((char*)"82:17:5B:D5:A9:9A:E2:9C", DW1000.MODE_LONGDATA_RANGE_ACCURACY);
+    Serial.println("Starting up device in Anchor mode");
+  } else {
+    DW1000Ranging.attachNewDevice(newDevice);
+    DW1000Ranging.startAsTag((char*)"7D:00:22:EA:82:60:3B:9C", DW1000.MODE_LONGDATA_RANGE_ACCURACY);
+    Serial.println("Starting up device in Tag mode");
+  }
+
 }
 
 void loop() {
+  //update DW1000
+  DW1000Ranging.loop();
+
+  //record measurements from other sensors
   loopNum++;
 
   float xAccel, yAccel, zAccel;
@@ -259,5 +289,31 @@ void printIMUInfo(float xAccel, float yAccel, float zAccel, float xGyro, float y
     logFile.close();
   }
 }
+
+void newRange() {
+  Serial.print("from: "); Serial.print(DW1000Ranging.getDistantDevice()->getShortAddress(), HEX);
+  Serial.print("\t Range: "); Serial.print(DW1000Ranging.getDistantDevice()->getRange()); Serial.print(" m");
+  Serial.print("\t RX power: "); Serial.print(DW1000Ranging.getDistantDevice()->getRXPower()); Serial.println(" dBm");
+}
+
+//This is for Anchors only
+void newBlink(DW1000Device* device) {
+  Serial.print("blink; 1 device added ! -> ");
+  Serial.print(" short:");
+  Serial.println(device->getShortAddress(), HEX);
+}
+
+//This is for Tags only
+void newDevice(DW1000Device* device) {
+  Serial.print("ranging init; 1 device added ! -> ");
+  Serial.print(" short:");
+  Serial.println(device->getShortAddress(), HEX);
+}
+
+void inactiveDevice(DW1000Device* device) {
+  Serial.print("delete inactive device: ");
+  Serial.println(device->getShortAddress(), HEX);
+}
+
 
 
