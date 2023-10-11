@@ -38,11 +38,10 @@ int loopsPerLog = 10;
 bool logSerial = false;
 
 //DW1000 (UWB Chip) constants
-const bool IS_ANCHOR = false;
+const bool IS_ANCHOR = true;
 const uint8_t PIN_RST = 9; // reset pin
 const uint8_t PIN_IRQ = 17; // irq pin
 const uint8_t PIN_SS = 19; // spi select pin
-
 
 void setup() {
   Serial.begin(9600);
@@ -203,6 +202,7 @@ void printGPSInfo(float lat, float lon, float speed, float altitude, int numSats
   Serial.println();
 
   //output to SD
+  noInterrupts();
   if(!logFile.open(logFilename, O_APPEND | O_WRITE)) {
     Serial.println("Could not create log file.  Check SD Card.");
   }
@@ -220,6 +220,8 @@ void printGPSInfo(float lat, float lon, float speed, float altitude, int numSats
   logFile.print((int)numSats);
   logFile.println();
   logFile.close();
+  interrupts();
+
 }
 
 void printIMUInfo(float xAccel, float yAccel, float zAccel, float xGyro, float yGyro, float zGyro, float xMag, float yMag, float zMag, float temp, bool logSD) {
@@ -255,6 +257,7 @@ void printIMUInfo(float xAccel, float yAccel, float zAccel, float xGyro, float y
 
   if (logSD) {
     //can we create a log file
+    noInterrupts();
     if(!logFile.open(logFilename, O_APPEND | O_WRITE)) {
         Serial.println("Could not create log file.  Check SD Card.");
     }
@@ -287,6 +290,7 @@ void printIMUInfo(float xAccel, float yAccel, float zAccel, float xGyro, float y
     logFile.println();
 
     logFile.close();
+    interrupts();
   }
 }
 
@@ -294,6 +298,22 @@ void newRange() {
   Serial.print("from: "); Serial.print(DW1000Ranging.getDistantDevice()->getShortAddress(), HEX);
   Serial.print("\t Range: "); Serial.print(DW1000Ranging.getDistantDevice()->getRange()); Serial.print(" m");
   Serial.print("\t RX power: "); Serial.print(DW1000Ranging.getDistantDevice()->getRXPower()); Serial.println(" dBm");
+
+  noInterrupts();
+  if(!logFile.open(logFilename, O_APPEND | O_WRITE)) {
+        Serial.println("Could not create log file.  Check SD Card.");
+  }
+  logFile.print("UWB: ");
+  logFile.print(DW1000Ranging.getDistantDevice()->getShortAddress(), HEX);
+  logFile.print(",");
+  logFile.print(DW1000Ranging.getDistantDevice()->getRange());
+  logFile.print(",");
+  logFile.print(DW1000Ranging.getDistantDevice()->getRXPower());
+  logFile.println();
+  logFile.close();
+  interrupts();
+
+  Serial.println();
 }
 
 //This is for Anchors only
