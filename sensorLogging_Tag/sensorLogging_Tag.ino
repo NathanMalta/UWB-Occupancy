@@ -166,7 +166,7 @@ void setup() {
   pixels.setBrightness(10);
   pixels.show();
 
-  while (!Serial); //wait for serial before printing
+  //while (!Serial); //wait for serial before printing
 
   //can we connect to gyro + accel?
   if (!imu.begin()) {
@@ -520,6 +520,9 @@ void printIMUInfo(float xAccel, float yAccel, float zAccel, float xGyro, float y
     logFile.print(",");
 
     logFile.print(temp);
+    logFile.print(",");
+
+    logFile.print(millis());
     logFile.println();
 
     logFile.close();
@@ -576,6 +579,9 @@ void logUWBToUSB(){
   }
   
   logFile.print(long_buff);
+  logFile.print(",");
+  logFile.print(millis());
+  logFile.print(",");
   for (int i = starttap ; i < endtap + 1; i++) {
     RealData = myAcc[(i * 4) + 2] << 8 | myAcc[(i * 4) + 1];
     ImaginaryData = myAcc[(i * 4) + 4] << 8 | myAcc[(i * 4) + 3];

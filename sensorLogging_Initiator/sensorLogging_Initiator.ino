@@ -165,7 +165,7 @@ void setup() {
   pixels.setBrightness(10);
   pixels.show();
 
-  while (!Serial); //wait for serial before printing
+  //while (!Serial); //wait for serial before printing
 
   //can we connect to gyro + accel?
   if (!imu.begin()) {
